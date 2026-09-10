@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 420" width="920" height="420">
+<rect width="920" height="420" rx="12" fill="#ffffff"/>
+<text x="24" y="34" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="19" font-weight="700" fill="#0f172a">12-Minute Thermal Stress Test — 100 Rounds, No Speed Decay</text>
+<text x="24" y="56" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#64748b">Continuous 512-token generation · NVFP4-LOW @152K · laptop RTX 5090 (≈145 W ceiling)</text>
+<line x1="70" y1="330.0" x2="770" y2="330.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="334.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#2563eb" text-anchor="end">40</text>
+<text x="778" y="334.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#dc2626">40°</text>
+<line x1="70" y1="291.7" x2="770" y2="291.7" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="295.7" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#2563eb" text-anchor="end">50</text>
+<text x="778" y="295.7" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#dc2626">48°</text>
+<line x1="70" y1="253.3" x2="770" y2="253.3" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="257.3" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#2563eb" text-anchor="end">60</text>
+<text x="778" y="257.3" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#dc2626">56°</text>
+<line x1="70" y1="215.0" x2="770" y2="215.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="219.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#2563eb" text-anchor="end">70</text>
+<text x="778" y="219.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#dc2626">65°</text>
+<line x1="70" y1="176.7" x2="770" y2="176.7" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="180.7" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#2563eb" text-anchor="end">80</text>
+<text x="778" y="180.7" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#dc2626">73°</text>
+<line x1="70" y1="138.3" x2="770" y2="138.3" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="142.3" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#2563eb" text-anchor="end">90</text>
+<text x="778" y="142.3" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#dc2626">81°</text>
+<line x1="70" y1="100.0" x2="770" y2="100.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="104.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#2563eb" text-anchor="end">100</text>
+<text x="778" y="104.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#dc2626">90°</text>
+<line x1="70.0" y1="330" x2="70.0" y2="335" stroke="#64748b"/>
+<text x="70.0" y="349.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="middle">0 min</text>
+<line x1="232.0" y1="330" x2="232.0" y2="335" stroke="#64748b"/>
+<text x="232.0" y="349.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="middle">3 min</text>
+<line x1="393.9" y1="330" x2="393.9" y2="335" stroke="#64748b"/>
+<text x="393.9" y="349.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="middle">6 min</text>
+<line x1="555.9" y1="330" x2="555.9" y2="335" stroke="#64748b"/>
+<text x="555.9" y="349.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="middle">9 min</text>
+<line x1="717.8" y1="330" x2="717.8" y2="335" stroke="#64748b"/>
+<text x="717.8" y="349.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="middle">12 min</text>
+<path d="M76.3,181.7 L82.6,186.2 L88.9,184.0 L95.2,190.5 L155.5,190.1 L161.8,194.3 L168.1,177.4 L174.4,191.2 L126.7,181.7 L133.0,188.9 L139.3,161.0 L145.6,195.1 L205.9,174.0 L212.2,172.5 L218.5,197.4 L224.8,169.4 L178.0,202.4 L184.3,183.6 L189.7,180.1 L196.9,207.0 L204.1,223.4 L265.2,204.6 L271.5,203.1 L277.8,195.1 L285.0,182.0 L237.4,207.7 L244.6,207.3 L250.8,162.9 L256.2,174.0 L317.4,192.8 L323.7,195.5 L330.0,184.0 L337.2,224.6 L290.4,203.5 L296.7,178.6 L303.9,192.4 L310.2,216.9 L370.5,175.9 L376.8,175.1 L383.1,179.0 L390.3,208.9 L342.6,187.8 L348.9,168.6 L355.2,202.4 L362.4,194.7 L422.7,179.7 L429.0,206.2 L436.2,182.4 L442.5,193.5 L394.8,186.2 L402.0,216.9 L409.2,213.9 L415.5,193.5 L475.8,185.1 L483.0,200.8 L489.3,212.7 L495.6,181.3 L447.9,167.5 L454.2,200.0 L461.4,198.9 L468.6,210.4 L529.8,218.1 L537.0,205.4 L543.3,196.6 L550.5,193.5 L502.8,207.7 L510.0,200.0 L515.4,166.3 L522.6,205.8 L528.0,171.3 L588.3,185.1 L595.4,188.9 L600.8,171.3 L607.1,190.8 L560.4,214.2 L567.6,211.5 L574.8,217.7 L581.1,182.0 L641.3,183.2 L647.6,184.0 L653.9,185.9 L660.2,180.5 L612.5,197.8 L618.8,197.0 L625.1,184.0 L632.3,195.8 L692.6,198.1 L699.8,225.7 L706.1,193.5 L712.4,181.3 L665.6,227.3 L671.9,189.3 L678.2,188.5 L684.5,173.6 L744.8,159.8 L750.2,174.8 L757.4,192.4 L763.7,184.0 L770.0,199.7 L722.3,162.5" fill="none" stroke="#2563eb" stroke-width="2" opacity="0.9"/>
+<path d="M76.3,261.0 L82.6,228.8 L88.9,228.8 L95.2,219.6 L155.5,215.0 L161.8,215.0 L168.1,205.8 L174.4,201.2 L126.7,205.8 L133.0,196.6 L139.3,196.6 L145.6,196.6 L205.9,187.4 L212.2,187.4 L218.5,196.6 L224.8,187.4 L178.0,182.8 L184.3,182.8 L189.7,178.2 L196.9,178.2 L204.1,178.2 L265.2,178.2 L271.5,178.2 L277.8,178.2 L285.0,173.6 L237.4,173.6 L244.6,173.6 L250.8,173.6 L256.2,169.0 L317.4,173.6 L323.7,173.6 L330.0,173.6 L337.2,169.0 L290.4,169.0 L296.7,169.0 L303.9,169.0 L310.2,169.0 L370.5,169.0 L376.8,173.6 L383.1,169.0 L390.3,164.4 L342.6,169.0 L348.9,169.0 L355.2,164.4 L362.4,169.0 L422.7,169.0 L429.0,164.4 L436.2,164.4 L442.5,164.4 L394.8,164.4 L402.0,164.4 L409.2,169.0 L415.5,164.4 L475.8,164.4 L483.0,169.0 L489.3,173.6 L495.6,178.2 L447.9,164.4 L454.2,169.0 L461.4,164.4 L468.6,169.0 L529.8,196.6 L537.0,169.0 L543.3,182.8 L550.5,164.4 L502.8,169.0 L510.0,159.8 L515.4,159.8 L522.6,164.4 L528.0,159.8 L588.3,159.8 L595.4,159.8 L600.8,164.4 L607.1,164.4 L560.4,164.4 L567.6,173.6 L574.8,164.4 L581.1,159.8 L641.3,164.4 L647.6,159.8 L653.9,159.8 L660.2,164.4 L612.5,159.8 L618.8,159.8 L625.1,173.6 L632.3,159.8 L692.6,159.8 L699.8,159.8 L706.1,159.8 L712.4,159.8 L665.6,159.8 L671.9,164.4 L678.2,164.4 L684.5,169.0 L744.8,164.4 L750.2,164.4 L757.4,159.8 L763.7,164.4 L770.0,164.4 L722.3,159.8" fill="none" stroke="#dc2626" stroke-width="2" opacity="0.9"/>
+<circle cx="76.3" cy="181.7" r="4" fill="#2563eb"/><circle cx="722.3" cy="162.5" r="4" fill="#2563eb"/>
+<circle cx="76.3" cy="261.0" r="4" fill="#dc2626"/><circle cx="722.3" cy="159.8" r="4" fill="#dc2626"/>
+<text x="712.3" y="148.5" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" font-weight="700" fill="#2563eb" text-anchor="end">tok/s</text>
+<text x="712.3" y="179.8" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" font-weight="700" fill="#dc2626" text-anchor="end">GPU temp</text>
+<rect x="810" y="100" width="150" height="86" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+<text x="822" y="122" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11.5" fill="#64748b">First round</text>
+<text x="822" y="140" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a">78.7 tok/s · 55°C</text>
+<text x="822" y="160" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11.5" fill="#64748b">Last round (#100)</text>
+<text x="822" y="178" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#059669">83.7 tok/s · 77°C</text>
+<text x="24" y="396" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b">Temperature plateaus at 77°C; SM clock dips only −5%. Sustained agent workloads are thermally safe on this laptop.</text>
+</svg>
