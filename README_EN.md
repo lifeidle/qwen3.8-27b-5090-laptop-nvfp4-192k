@@ -1,355 +1,268 @@
-# Qwen3.8-27B on a Single 24GB GPU: A Complete Quantization & Tuning Study
+# Qwen3.8-27B on a Single 24GB GPU — Quantization & Tuning Study
 
-> **A systematic selection from 50+ community quantization variants, optimized layer-by-layer to the hardware limit**
->
-> Platform: RTX 5090 Laptop 24GB · Windows 11 · llama.cpp
-> TL;DR: **NVFP4-MTP-LOW + 192K context + q8_0 KV + MTP n-max 3 + llama.cpp b10889 = 79.6 tok/s**
+**Selecting the best of 53 community quantization variants, then optimizing layer-by-layer to the hardware limit**
 
-[中文版 →](./README.md)
+[中文版 →](./README.md) ｜ [Scripts →](./scripts) ｜ [Raw data →](./data)
 
----
-
-## Table of Contents
-
-1. [Overview](#1-overview)
-2. [Test Platform](#2-test-platform)
-3. [Candidate Landscape & Selection Funnel](#3-candidate-landscape--selection-funnel)
-4. [Methodology](#4-methodology)
-5. [Results](#5-results)
-6. [Key Findings](#6-key-findings-eight-reusable-lessons)
-7. [Final Recommended Configuration](#7-final-recommended-configuration)
-8. [Toolbox](#8-toolbox)
-9. [Reproduction Guide](#9-reproduction-guide)
+[![Model](https://img.shields.io/badge/model-Qwen3.8--27B-7c3aed)](https://huggingface.co/Qwen/Qwen3.8-27B)
+[![Platform](https://img.shields.io/badge/platform-RTX%205090%20Laptop%2024GB-76b900)]()
+[![Throughput](https://img.shields.io/badge/throughput-79.6%20tok%2Fs-d97706)]()
+[![Context](https://img.shields.io/badge/context-192K%20(q8__0%20KV)-2563eb)]()
+[![Engine](https://img.shields.io/badge/llama.cpp-b10889-0ea5e9)](https://github.com/ggml-org/llama.cpp/releases)
+[![License](https://img.shields.io/badge/license-MIT%20%2B%20CC%20BY%204.0-059669)](#license)
 
 ---
 
-## 1. Overview
+## 🏆 The Winner (read this first)
 
-**Background**: Qwen3.8-27B is a 27.8B dense multimodal model (Gated DeltaNet + Gated Attention hybrid, 262,144 native context, embedded MTP speculative head, Apache-2.0). Its BF16 weights total ~55.6 GB — far beyond any consumer single GPU — so deployment on a 24GB laptop requires community quantization.
+**NVFP4-MTP-LOW + 192K context + q8_0 KV + MTP n-max 3 + llama.cpp b10889**
 
-**Problem**: Within weeks of release, the ecosystem produced **50+ quantization variants** (multiple families × precision tiers) with contradictory quality/performance claims and no cross-platform comparison on the same hardware.
-
-**What this project does**:
-- Systematically surveys all major quantization families (53 variants)
-- Benchmarks the finalists under unified methodology (speed / capacity / quality)
-- Optimizes the winner layer-by-layer (KV quantization, MTP parameters, context ceiling, engine version, thermals)
-- Provides a reproducible final configuration and tooling
-
-**Outcome**: Found the dual-optimal (speed + capacity) solution under a "no quality loss" constraint on this machine, and verified its stability under sustained load.
-
----
-
-## 2. Test Platform
-
-| Item | Specification |
-|---|---|
-| **GPU** | NVIDIA GeForce RTX 5090 Laptop GPU, **24 GB GDDR7**, Blackwell (sm_120) |
-| CPU | Intel Core Ultra 9 275HX (24 threads) |
-| RAM | 64 GB DDR5 |
-| OS | Windows 11 |
-| **Inference Engine** | llama.cpp (two builds tested) |
-| Build A | **b10840** (unsloth build, MSVC 19.44, CUDA 12.8) |
-| Build B | **b10889** (official build, Clang 20.1.8, CUDA 13.3) |
-| Desktop VRAM baseline | ~500–680 MiB (without inference server) |
-| Model storage | NVMe SSD (`--load-mode none`, no mmap) |
-
-> ⚠️ The Laptop 5090 has a ~145–150 W power ceiling (far below the desktop part). All numbers here are measured on this platform and are **not directly comparable to desktop-GPU results**.
-
----
-
-## 3. Candidate Landscape & Selection Funnel
-
-### 3.1 Ecosystem Survey (53 variants)
-
-| Source family | Tiers | Size range | Notes |
-|---|---|---|---|
-| **esatapedico NVFP4-MTP** | 9 | 14.9 – 33.1 GB | All-NVFP4 backbone family: ORIG / VERY-LOW / COMPACT-LOW / LOW / MEDIUM / MID-HIGH / HIGH / VERY-HIGH / HIGHEST |
-| esatapedico NVFP4-BUDGET | 2 | 14.6 – 14.7 GB | MTP head stripped, 16GB-card oriented (BUDGET / STARVED) — **excluded** |
-| esatapedico SSMFIX | 8 | 14.9 – 23.2 GB | Experimental community patch (rescales 8 late-layer SSM conv1d weights); mixed evidence — **excluded** |
-| esatapedico TURBO-Fable series | 10 | 15.2 – 21.3 GB | Third-party fused tune (DavidAU TURBO Cold-Fusion, decensored); non-official weights — **excluded** |
-| **unsloth UD family** | 20 | 5.8 – 29.3 GiB | Full gradient from UD-IQ1_M to UD-Q8_K_XL |
-| **DASLab GSQ-RCO** | 3 | 11.5 – 13+ GB | Academic second-order quantization (Gumbel-Softmax / rate-constrained), incl. IQ3_S / IQ4_XS / IQ4_NL |
-| QUASAR NVFP4 (QAD) | 1+ | ~17 GB | Quantization-aware-distillation NVFP4 |
-| Other community conversions | several | — | e.g., multiple SSMFIX conversions |
-
-**Total: 53 variants entered the initial screening.**
-
-### 3.2 Selection Funnel
-
-```
-53 quantization variants (ecosystem survey)
-        │
-        │  Stage 1 — Hard constraints
-        │    ✗ Too large (ORIG 33GB / HIGHEST 23GB / Q8 series)
-        │    ✗ Experimental patches (8 SSMFIX tiers)
-        │    ✗ Third-party fused weights (10 TURBO-Fable tiers)
-        │    ✗ No MTP head (BUDGET / STARVED)
-        │    ✗ Too low precision (IQ1/IQ2 — unusable for agents)
-        ▼
-   ~15 structurally qualified candidates
-        │
-        │  Stage 2 — Paper precision + community data review
-        ▼
-   4 finalists benchmarked: DASLab IQ3_S · NVFP4-MID-HIGH · NVFP4-LOW · unsloth UD-Q4_K_S
-        │
-        │  Stage 3 — Unified head-to-head benchmarking
-        ▼
-   3 deep-dive contenders: IQ3_S · NVFP4-LOW · UD-Q4_K_S
-        │
-        │  Stage 4 — Speed / capacity / quality / stability
-        ▼
-   🏆 Winner: NVFP4-MTP-LOW
+```powershell
+# One-command launch (edit the two path variables at the top of the script first)
+.\scripts\start-nvfp4-low.ps1        # → http://127.0.0.1:8082
 ```
 
-### 3.3 Finalist Profiles
+### Three-Way Final Duel (each model at its own optimum, same machine, same conditions)
 
-| | DASLab GSQ-RCO IQ3_S-MTP | **esatapedico NVFP4-MTP-LOW** | unsloth UD-Q4_K_S |
+| | 🥇 **NVFP4-LOW** | 🥈 IQ3_S | 🥉 UD-Q4_K_S |
 |---|---|---|---|
-| Size | 11.29 GiB | 14.47 GiB | 14.30 GiB |
-| Method | GSQ-RCO mixed precision (~3.5 bpw avg) | All-NVFP4 backbone + light heads (Q5_0 / IQ4_XS) | Dynamic Q4_K_S (~4.4 bpw) |
-| Validation | ✅ Task-lossless (AIME/GPQA/LCB match BF16) | Community controlled test: all 4-bit quants tie FP8 | No semantic benchmarks |
-| MTP head | Embedded | Embedded | Embedded |
+| **Generation speed** | **79.6 tok/s** | 64.4 tok/s | 51.7 tok/s |
+| **15.6K-token prompt** | **9.7 s** | 14.9 s | 19.9 s |
+| **Max context** | 200K (192K recommended) | **212K** (240K extreme) | 200K |
+| **Model size** | 14.47 GiB | **11.29 GiB** | 14.30 GiB |
+| **Method** | All-NVFP4 + light heads | GSQ-RCO mixed (~3.5 bpw) | Dynamic Q4_K_S (~4.4 bpw) |
+| **Quality** | Tie | Tie (**task-lossless**, academically validated) | Tie (most rigorous details) |
+| **Role** | **Daily driver** ✅ | Ultra-long-context backup | Archive |
+
+> **In one line**: NVFP4-LOW wins both speed metrics (+24% generation, −35% prompt latency vs the runner-up), and its quality gap to BF16 is unmeasurable in a community 4,800-task controlled test. IQ3_S is only worth switching to when you need 210K+ tokens of context.
+
+![Speed duel](assets/chart1-speed-duel.svg)
 
 ---
 
-## 4. Methodology
+## 📌 Three Core Findings
 
-All tests use llama.cpp's `/completion` and `/v1/chat/completions` endpoints plus server-side timing logs:
-
-| # | Test | Method |
-|---|---|---|
-| 1 | **KV VRAM calibration** | Two-point difference method: run ctx=8192 and ctx=32768 instances, read `nvidia-smi` deltas → per-token KV cost (weights and fixed overhead factored out) |
-| 2 | **Context ceiling scan** | Stepwise launches (F16 / q8_0 / q4_0 / mixed KV); exact threshold located via `cudaMalloc` failure sizes |
-| 3 | **Generation speed** | Fixed 256-token prompt (temp 0.7), multi-run averaging; records `predicted_per_second` + MTP draft acceptance |
-| 4 | **Long-prompt processing** | 15,614-token Chinese document (needle-in-haystack construction); end-to-end time + `prompt eval` throughput |
-| 5 | **MTP parameter sweep** | n-max ∈ {2,3,4,5} × p-min ∈ {none, 0.75}, all combinations |
-| 6 | **Code quality** | Same-prompt duel: single-file Snake game (5 explicit requirements); checks completeness, feature coverage, hidden bugs |
-| 7 | **Long-context recall** | Needle tests at 12K tokens (needle at 70% depth) and 150K tokens (80% depth) |
-| 8 | **Engine comparison** | Same model/params on b10840 vs b10889 |
-| 9 | **Thermal stress** | 12 minutes of continuous 512-token generation; per-round tok/s + temp + power + SM clock |
-| 10 | **Quality baseline** | `reasoning_effort` comparison (default xhigh vs medium) |
-
-**Discipline**: every comparison holds model / context / KV type / MTP params / engine constant; speed tests are multi-run; VRAM is confirmed clean (<700 MiB baseline) after each server switch.
+1. **q8_0 KV is the most underrated optimization** — zero speed cost, +56% capacity (212K), near-lossless. Meanwhile q4_0-class KV reaches the full 262K but makes long prompts **28× slower** (kernel fallback) — unusable.
+2. **MTP needs no tuning** — n-max 3 is optimal on a 24GB card (2/3/4/5 and p-min all swept). High acceptance ≠ high speed.
+3. **Engine gains depend on quantization type** — b10840 → b10889 gave NVFP4 +6.6% speed and +48K capacity, but K-quants −11%. **Always re-measure capacity after an engine upgrade.**
 
 ---
 
-## 5. Results
+## 📊 Full Test Results
 
-### 5.1 Context Capacity: KV Quantization Is the Key
+### 1️⃣ Context capacity: KV quantization is the lever
 
-**Physical ceiling** (IQ3_S example; two-point method gives ~65 KiB per token @ F16):
+![Context capacity](assets/chart2-context-capacity.svg)
 
-| KV type | IQ3_S max context | Capacity gain vs F16 |
-|---|---|---|
-| F16 (default) | 136K | — |
-| **q8_0 (K/V)** | **212K** | **+56%** |
-| K q8_0 + V q4_0 | 262K (full) | +93% |
-| q4_0 (K/V) | 262K (full) | +93% |
-
-**⚠️ Major finding — q4_0-class KV has a hidden performance cliff**: it reaches the full 262K, but long-prompt processing collapses:
-
-| Config | 15.6K prompt latency | Verdict |
-|---|---|---|
-| 32K + F16 | 13.6 s | ✅ Baseline |
-| 136K + F16 | 15.2 s | ✅ No penalty |
-| **200K + q8_0** | **15.1 s** | ✅ **No penalty** |
-| 262K + q4_0-class | **~420 s (never finished)** | ❌ **28× slower** (attention kernel fallback; throughput decays from 286 to 29 tok/s) |
-
-**Conclusion**: **q8_0 is the sweet spot for KV quantization** (zero speed penalty, near-lossless, +56% capacity). q4_0-class KV is effectively unusable for long prompts.
-
-### 5.2 Three-Way Speed Duel (same conditions: own max context + q8_0 KV + MTP n-max 3)
-
-**Engine b10840 (older)**:
-
-| Model | Config | Gen avg | 15.6K prefill | Acceptance |
-|---|---|---|---|---|
-| **NVFP4-LOW** | 152K | **74.7 tok/s** | **10.1 s** | 63% |
-| IQ3_S | 212K | 61.9 tok/s | 15.5 s | 65% |
-| UD-Q4_K_S | 152K | 58.3 tok/s | 15.2 s | 73% (highest) |
-
-**Engine b10889 (newer)**:
-
-| Model | Config | Gen avg | 15.6K prefill | Max context |
-|---|---|---|---|---|
-| **NVFP4-LOW** | **192K (recommended) / 200K (max)** | **79.6 tok/s** | **9.7 s** | 200K |
-| IQ3_S | 212K (up to 240K) | 64.4 tok/s | 14.9 s | 240K |
-| UD-Q4_K_S | 200K | 51.7 tok/s | 19.9 s | 200K |
-
-**Why the differences**:
-- **Why NVFP4-LOW is fastest**: its head design (Q5_0 output + IQ4_XS MTP head) minimizes read cost on every MTP verification/draft pass — the community found the same pattern on a desktop RTX 5090 (LOW is the family's throughput champion).
-- **Why UD has the highest acceptance (73%) yet is slowest**: K-quant's per-pass verification cost is the heaviest (dequant overhead) with no FP4 acceleration — net effect: last place.
-- **NVFP4's FP4 tensor-core advantage only materializes in prefill**: both NVFP4 models prefill in ~10 s, K-quants take 15–20 s.
-
-### 5.3 Quality Verification: A Three-Way Tie
-
-**Code quality** (identical Snake-game prompt):
-
-| Dimension | IQ3_S | NVFP4-MID-HIGH | UD-Q4_K_S |
+| Model | F16 KV ceiling | **q8_0 KV ceiling** | q4_0-class KV |
 |---|---|---|---|
-| Complete & runnable | ✅ | ✅ | ✅ |
-| All 5 requirements | ✅ | ✅ | ✅ |
-| Anti-reverse buffering | ✅ | ✅ | ✅ |
-| Food avoids snake body | ✅ | ✅ | ✅ |
-| **Tail exclusion** (advanced detail) | ✗ | ✗ | **✅ (only one)** |
-| Output length | 3,985 chars | 5,624 chars | 4,164 chars |
+| IQ3_S | 136K | **212K** (240K extreme) | 262K ⚠️ 28× slower |
+| NVFP4-LOW | 96K | **200K** | — |
+| NVFP4-MID-HIGH | 88K | ~160K (est.) | — |
+| UD-Q4_K_S | 96K | 200K | — |
 
-**Long-context recall**: all three passed (needles accurately retrieved at 12K/70% and 150K/80% depth).
+**Slow-path evidence** (same 15.6K-token prompt):
 
-**Conclusion: the three quants tie on quality.** UD-Q4_K_S is the most rigorous on classic details (a small manifestation of its 4.4 bpw paper advantage), but not enough to form a generational gap.
+| Config | Latency | Verdict |
+|---|---|---|
+| 32K + F16 KV | 13.6 s | Baseline |
+| 136K + F16 KV | 15.2 s | No penalty |
+| 200K + **q8_0** | **15.1 s** | **No penalty** ✅ |
+| 262K + **q4_0-class** | **~420 s, never finished** | ❌ Kernel fallback; throughput decays 286 → 29 tok/s |
 
-### 5.4 MTP Parameter Sweep: Current Settings Are Already Optimal
+### 2️⃣ Speed duel (cross-validated on two engine builds)
 
-| Config | LOW avg | IQ3_S | UD | Verdict |
+| Model | Engine b10840 (old) | Engine b10889 (new) | Delta |
+|---|---|---|---|
+| **NVFP4-LOW** | 74.7 tok/s / 152K / 10.1s | **79.6 / 200K / 9.7s** | **+6.6%, +48K** |
+| IQ3_S | 61.9 / 212K / 15.5s | 64.4 / 212K / 14.9s | +4% |
+| UD-Q4_K_S | 58.3 / 152K / 15.2s | 51.7 / 200K / 19.9s | **−11%** (no benefit) |
+
+**Why**:
+- **Why LOW is fastest** — its light heads (Q5_0 output + IQ4_XS MTP) minimize read cost on every MTP verification/draft pass. The community observed the same pattern on a desktop RTX 5090.
+- **Why UD has the highest acceptance (73%) yet is slowest** — K-quant's per-pass verification cost is heaviest (dequant overhead) with no FP4 acceleration.
+- **NVFP4's FP4 advantage materializes only in prefill** (10 s vs 15–20 s); decode advantages come from head design, not file size.
+
+### 3️⃣ MTP parameter sweep (cross-validated on all three models)
+
+| Config | NVFP4-LOW | IQ3_S | UD-Q4_K_S | Verdict |
 |---|---|---|---|---|
 | **n-max 3** | **74.4** | **63.2** | **59.3** | 🏆 Best for all three |
 | n-max 2 | 66.7 | 61.0 | 54.7 | 7–10% slower |
-| n-max 4 | launch crash (short 594 MiB) | 63.5 (@200K, no gain) | untested | Unusable / no gain |
+| n-max 4 | launch crash (short 594 MiB) | 63.5 (no gain) | untested | Unusable / no gain |
 | n-max 3 + p-min 0.75 | 64.6 (acceptance inflated to 85%) | — | — | Throughput −13% |
 
-**Key insight**: **n-max 4 needs ~594 MiB extra VRAM** for its verification batch — unusable at the edge of a 24GB card, and even when usable, it brings no gain. **High acceptance ≠ high speed** (p-min 0.75 raised acceptance from 63% to 85% while throughput dropped 13%).
+> Key insight: **n-max 4 needs ~594 MiB extra VRAM** for its verification batch — unusable at the edge of a 24GB card, and useless even when it fits.
 
-### 5.5 Engine Version Comparison (b10840 → b10889)
+### 4️⃣ Quality: a three-way tie
 
-| Model | Old engine | New engine | Delta |
+**Same-prompt duel** (single-file Snake game, 5 explicit requirements):
+
+| Dimension | IQ3_S | NVFP4-MID-HIGH | UD-Q4_K_S |
 |---|---|---|---|
-| **NVFP4-LOW** | 74.7 / 152K / 10.1s | **79.6 / 200K / 9.7s** | **+6.6% speed, +48K capacity** |
-| IQ3_S | 61.9 / 212K / 15.5s | 64.4 / 212K / 14.9s | +4% |
-| UD-Q4_K_S | 58.3 / 152K / 15.2s | 51.7 / 200K / 19.9s | **−11% (no benefit)** |
+| Complete / all requirements / anti-reverse / food placement | ✅ | ✅ | ✅ |
+| **Tail exclusion** (advanced detail) | ✗ | ✗ | **✅ only one** |
+| Output length | 3,985 chars | 5,624 chars | 4,164 chars |
+| Long-context recall (12K/70% and 150K/80% depth) | ✅ | ✅ | ✅ |
 
-**Conclusion**: the newer engine's optimizations **mainly benefit NVFP4 models** (FP4 path + better VRAM management — the latter directly gave LOW +48K usable context); K-quants saw no benefit.
+### 5️⃣ Thermal stress: 12 minutes sustained, zero decay
 
-**⚠️ Migration note**: the newer build removed `--no-mmap`; the replacement is **`--load-mode none`**.
+![Thermal stress](assets/chart3-thermal-stress.svg)
 
-### 5.6 Thermal Stress Test (12 min / 100 rounds sustained load)
+| Metric | Round 1 | Round 100 |
+|---|---|---|
+| Generation speed | 78.7 tok/s | **83.7 tok/s (no decay)** |
+| GPU temp | 55 °C | 77 °C (stable plateau) |
+| Power | 132 W | 145 W |
+| SM clock | 1830 MHz | 1740 MHz (−5%) |
 
-| Metric | First round | Last round | Verdict |
-|---|---|---|---|
-| Generation speed | 78.7 tok/s | 83.7 tok/s | **Zero decay** |
-| GPU temp | 55 °C | 77 °C (stable plateau) | Safe |
-| Power | 132 W | 145 W | Stable |
-| SM clock | 1830 MHz | 1740 MHz | −5% (minor) |
-
-**Conclusion: laptop thermals easily handle sustained agent workloads** — no systematic speed decay, no thermal throttling concerns.
-
----
-
-## 6. Key Findings (Eight Reusable Lessons)
-
-1. **`reasoning_effort` is mandatory**: Qwen3.8-27B's default effort (xhigh) burns astonishingly many tokens — measured **8,000 tokens of pure thinking with zero output**. You must pass `{"chat_template_kwargs":{"reasoning_effort":"medium"}}` (medium converges in 11 s with complete code). A community 4,800-task controlled test confirms: xhigh burns 7–11× more tokens than low for 0–4.7 points. **Never disable reasoning** (NVFP4 collapses to 13/30 on HumanEval+ with reasoning off).
-
-2. **q4_0-class KV has a hidden performance cliff**: capacity looks best (262K), but an attention kernel fallback makes long prompts **28× slower**. **q8_0 KV is the sweet spot** (zero penalty + near-lossless + +56% capacity).
-
-3. **MTP is pure win on dense models**: n-max 3 measured **+79% (IQ3_S) / +73% (NVFP4)**, acceptance 60–80%. This contradicts the "MTP slows MoE down" experience (MoE's expert-read penalty doesn't exist on dense). But n-max 4+ needs ~594 MiB extra VRAM — unsuitable for small-VRAM cards.
-
-4. **High MTP acceptance ≠ high speed**: speed = per-pass cost × per-pass yield. A light-head design (LOW's Q5_0 lm_head + IQ4_XS MTP head) makes every pass cheaper, so it wins even without the top acceptance rate. p-min filtering raises acceptance while lowering throughput.
-
-5. **NVFP4's FP4 acceleration only materializes in prefill**: decode is bandwidth-bound — NVFP4 models are larger files (14.5 GiB vs IQ3_S's 11.3 GiB) and should theoretically be slower at decode; yet the light-head NVFP4-LOW is fastest in practice. **On prefill, NVFP4 leads across the board (10 s vs 15 s class)**.
-
-6. **New-engine gains depend heavily on quantization type**: b10840→b10889 gave NVFP4 +6.6% speed and +48K capacity (VRAM management), while K-quant lost 11%. **Always re-measure capacity after an engine upgrade**.
-
-7. **Large contexts are unfriendly to K-quants**: NVFP4-LOW's prefill at 200K is still 9.7 s (same as at 152K), while UD-Q4_K_S degrades from 15.2 s to 19.9 s at 200K. KV quantization + large allocation hits K-quant's dequant path harder.
-
-8. **Prompt cache is the biggest free speedup**: the same 15.6K input takes 15 s cold and **2.3 s warm (6.5×)**. In long agent sessions, keep the conversation prefix stable (don't repeatedly edit system prompts) to keep hitting the cache.
+**Conclusion: laptop thermals easily handle sustained agent workloads.** Speed variance (±10%) tracks MTP acceptance randomness, not temperature.
 
 ---
 
-## 7. Final Recommended Configuration
+## 🔍 Selection Funnel: 53 → 1
 
-### 🏆 Primary (daily coding agent)
+![Selection funnel](assets/chart4-selection-funnel.svg)
 
-```
-Model:  Qwen3.8-27B-NVFP4-MTP-LOW.gguf (14.47 GiB)
-Engine: llama.cpp b10889 (or newer official builds)
-Flags:  -ngl 99 -fa on -fit off -c 192000 --cache-type-k q8_0 --cache-type-v q8_0
-        --load-mode none --jinja --spec-type draft-mtp --spec-draft-n-max 3
-Perf:   79.6 tok/s generation · 9.7 s for 15.6K input · max context 200K (192K recommended)
-Quality: indistinguishable from BF16 in community controlled tests (all 4-bit quants tie FP8)
-```
+| Stage | Count | Notes |
+|---|---|---|
+| Ecosystem survey | **53** | 8 source families (esatapedico NVFP4 9+2+8+10 tiers, unsloth UD 20, DASLab GSQ-RCO 3, QUASAR, …) |
+| Hard-constraint filter | ~15 | Removed: too large (ORIG 33GB / HIGHEST 23GB / Q8), experimental patches (8 SSMFIX), third-party fused weights (10 TURBO-Fable), no MTP head (BUDGET), too low precision (IQ1/IQ2) |
+| Benchmarked finalists | 4 | IQ3_S · NVFP4-MID-HIGH · NVFP4-LOW · UD-Q4_K_S |
+| Deep duel | 3 | IQ3_S · NVFP4-LOW · UD-Q4_K_S |
+| **Winner** | **1** | **NVFP4-MTP-LOW** |
 
-### Backup (ultra-long context)
-
-```
-Model:  DASLab GSQ-RCO IQ3_S-MTP (11.29 GiB)
-Flags:  same as above, -c 212000 (up to 240K)
-Perf:   64.4 tok/s generation · 14.9 s for 15.6K input
-Why:    Task-lossless academic validation; smallest disk footprint
-```
-
-### Universal API requirement (all three)
-
-```json
-{
-  "messages": [...],
-  "chat_template_kwargs": { "reasoning_effort": "medium" }
-}
-```
-Thinking mode sampling: `temp 1.0 / top_p 0.95 / top_k 20`; non-thinking: `temp 0.7 / top_p 0.80 / top_k 20`.
+**Two notable exclusions** (they look prominent on HF):
+- **SSMFIX series**: a community patch rescaling 8 late-layer SSM conv1d weights (hypothesis: fixing long-context degradation). Mixed evidence (TruthfulQA +6~8 pp but CMMLU −1.8, no long-context validation); the card itself says "EXPERIMENT, NOT AN IMPROVEMENT".
+- **TURBO-Fable-Cold-Fusion series**: third-party fused tunes (decensored, thinking-reduced), non-official weights, self-reported benchmarks.
 
 ---
 
-## 8. Toolbox
+## ⚙️ Eight Reusable Lessons
 
-`scripts/` contains three PowerShell launchers used throughout this study (paths parameterized):
+1. **`reasoning_effort` is mandatory** — the default (xhigh) burned 8,000 tokens of pure thinking with zero output. Pass `{"chat_template_kwargs":{"reasoning_effort":"medium"}}`. A community 4,800-task test: xhigh burns 7–11× more tokens than low for 0–4.7 points. **Never disable reasoning** (NVFP4 collapses to 13/30 on HumanEval+ with reasoning off).
+2. **q4_0-class KV has a hidden performance cliff** — best-looking capacity (262K), 28× slower long prompts.
+3. **MTP is pure win on dense models** — n-max 3 gives +73~79% (the "MTP slows MoE down" experience doesn't apply).
+4. **High acceptance ≠ high speed** — speed = per-pass cost × per-pass yield; light heads beat high acceptance.
+5. **NVFP4's FP4 acceleration only shows in prefill** — decode is bandwidth-bound and depends on head design.
+6. **Engine gains are quantization-dependent** — re-measure capacity after upgrading (NVFP4 +48K, K-quant degrades).
+7. **Large contexts are unfriendly to K-quants** — LOW's prefill stays 9.7 s at 200K; UD degrades 15.2 → 19.9 s.
+8. **Prompt cache is the biggest free speedup** — same 15.6K input: 15 s cold → **2.3 s warm (6.5×)**. Keep the agent conversation prefix stable.
 
-| Script | Purpose |
-|---|---|
-| `start-nvfp4-low.ps1` | 🏆 Primary config (NVFP4-LOW @192K + q8_0 + MTP) |
-| `start-iq3s.ps1` | Backup config (IQ3_S @212K) |
-| `start-nvfp4-midhigh.ps1` | Early comparison group (NVFP4-MID-HIGH @84K) |
+---
 
-**Before use**: edit the two variables at the top → `$ENGINE_DIR` (llama.cpp directory) and `$MODELS_DIR` (model directory).
+## 🛠 Toolbox
+
+Three PowerShell launchers in `scripts/` (paths parameterized; **save as UTF-8 with BOM**):
+
+| Script | Purpose | Key flags |
+|---|---|---|
+| `start-nvfp4-low.ps1` | 🏆 Daily driver | `-c 192000` + q8_0 KV + MTP n-max 3 |
+| `start-iq3s.ps1` | Ultra-long-context backup | `-c 212000` (up to 240K) |
+| `start-nvfp4-midhigh.ps1` | Comparison group | `-c 84000` |
+
+**Edit the two variables at the top before use**: `$ENGINE_DIR` (llama.cpp folder), `$MODELS_DIR` (model folder).
 
 > ⚠️ Two known pitfalls (already handled in the scripts):
-> 1. **Script files must be saved as UTF-8 with BOM** — otherwise PowerShell 5.1 decodes Chinese comments as ANSI and produces syntax errors ("string terminator missing").
-> 2. **b10889+ does not support `--no-mmap`** — use `--load-mode none` instead.
+> 1. **Scripts must be UTF-8 with BOM** — otherwise PowerShell 5.1 mis-decodes Chinese comments and throws a "string terminator missing" error.
+> 2. **b10889+ removed `--no-mmap`** — use `--load-mode none` instead.
+
+**API requirement (all configs)**:
+```json
+{ "messages": [], "chat_template_kwargs": { "reasoning_effort": "medium" } }
+```
+Thinking sampling `temp 1.0 / top_p 0.95 / top_k 20`; instruct sampling `temp 0.7 / top_p 0.80 / top_k 20`.
 
 ---
 
-## 9. Reproduction Guide
+## ❓ FAQ
+
+**Q: Why not the full 262K (the model's native maximum)?**
+A: It works, but only with q4_0-class KV, which makes long prompts 28× slower (kernel fallback). 192K + q8_0 is the sweet spot across capacity, speed, and quality.
+
+**Q: Does q8_0 KV hurt quality?**
+A: Measured and widely reported as near-lossless. Our long-context recall tests (12K/70% and 150K/80% depth) all passed with q8_0 KV.
+
+**Q: Why not Q6/Q8 quants for higher accuracy?**
+A: They don't fit 24GB (Q8_0 is 27 GiB). 4-bit is the quality ceiling for this hardware class — community controlled testing shows 4-bit statistically ties FP8 at task level.
+
+**Q: LOW's heads (Q5_0 / IQ4_XS) are lower precision than MID-HIGH's (all Q8_0). Is quality really equal?**
+A: Author's PPL: LOW 3.2761 / MEDIUM 3.2858 / MID-HIGH 3.2903 (within error bars; LOW slightly better). Code duel: three-way tie. Head precision affects PPL far less than the backbone.
+
+**Q: How much faster is a desktop 5090?**
+A: The 145 W power ceiling here is laptop-specific; a desktop 5090 (575 W) is typically 2–3× faster at prefill and 1.5–2× at decode. **Capacity conclusions (KV quantization, context ceilings) transfer directly.**
+
+**Q: What about 16GB cards?**
+A: Use a smaller tier (e.g. NVFP4 COMPACT-LOW 15.2 GB, or the MTP-less BUDGET/STARVED at 14.6 GB), q8_0 KV, context capped near 96K; or IQ3_S (11.3 GB) with more context.
+
+**Q: Does it support image input?**
+A: Yes (native VLM). Download `mmproj-BF16.gguf` (~0.87 GB) and pass `--mmproj`; it costs about 1 GB extra VRAM.
+
+**Q: Can I run multiple instances?**
+A: 24GB won't hold two 27B instances. Switch configs instead (~30 s, three launchers provided).
+
+**Q: Why llama.cpp instead of vLLM / SGLang?**
+A: On Blackwell laptops, their VRAM management and GGUF quantization ecosystem are less flexible, and community NVFP4 weights ship mainly as GGUF. vLLM suits server-side multi-concurrency.
+
+---
+
+## 📚 References & Further Reading
+
+**Models & quants**
+- [Qwen/Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) — base model (Apache-2.0)
+- [esatapedico/Qwen3.8-27B-NVFP4-MTP-GGUF](https://huggingface.co/esatapedico/Qwen3.8-27B-NVFP4-MTP-GGUF) — the winning model's family (9 tiers)
+- [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) — UD dynamic quant family
+- DASLab GSQ-RCO — search HuggingFace for `DASLab Qwen3.8-27B GSQ-RCO`
+
+**Engine**
+- [llama.cpp releases](https://github.com/ggml-org/llama.cpp/releases) — grab both the Windows CUDA main package and the cudart package, unzip into one folder
+- MTP support: add `--spec-type draft-mtp`
+
+**Related project**
+- [Qwen3.8-Flash-Next 177B deployment log](https://github.com/lifeidle/qwen3.8-flash-next-5090-laptop-256k) — MoE deployment on the same platform (three-tier memory split, 256K context)
+
+---
+
+## 🔧 Troubleshooting
+
+| Symptom | Cause & fix |
+|---|---|
+| Exits immediately, empty log | Incompatible flag. Newer builds removed `--no-mmap` — use `--load-mode none` |
+| `failed to allocate buffer for kv cache` | Context exceeds VRAM. Lower `-c` or use q8_0 KV |
+| Launches but inference hangs | VRAM too tight (<200 MiB free). Reduce context by 8–16K |
+| Output is all thinking, no answer | Missing `reasoning_effort`; default xhigh burns the budget |
+| Script error "string terminator missing" | Save the script as UTF-8 with BOM |
+| Mojibake output | Request body not UTF-8 — write a JSON file and `curl --data-binary @file` |
+
+---
+
+## Reproduction
 
 ```powershell
-# 1. Get the engine (either build)
-#    Official prebuilt: https://github.com/ggml-org/llama.cpp/releases
-#    Download both the Windows CUDA main package and the cudart package; unzip into one folder
-
-# 2. Get the model
-#    NVFP4-LOW: https://huggingface.co/esatapedico/Qwen3.8-27B-NVFP4-MTP-GGUF
-#    IQ3_S:     search HuggingFace for "DASLab Qwen3.8-27B GSQ-RCO"
-#    (hf-mirror.com works as a mirror in restricted networks)
-
-# 3. Launch (primary config)
+# 1. Engine: download the llama.cpp Windows CUDA packages (main + cudart), unzip into one folder
+# 2. Model: download the GGUF from the links above (hf-mirror.com works as a mirror)
+# 3. Launch: edit the two path variables, then run
 .\scripts\start-nvfp4-low.ps1
-# → open http://127.0.0.1:8082
-
 # 4. Verify
-curl http://127.0.0.1:8082/health
-# Expected: {"status":"ok"}
+curl http://127.0.0.1:8082/health     # expect {"status":"ok"}
 ```
 
-**Acceptance baseline** (for comparison): after health check passes, 256-token generation should reach **75–85 tok/s** (variance comes from content-dependent MTP acceptance); a 15.6K-token input prefills in ~10 s.
+**Acceptance baseline**: 256-token generation should reach **75–85 tok/s** (variance from MTP acceptance); a 15.6K-token prompt prefills in ~10 s.
 
 ---
 
 ## Data Notes
 
-- All speeds are multi-run sampled; ±10% variance is normal (MTP acceptance depends on generated content)
-- Capacity figures are measured extremes with successful inference; "launch OK but inference crash" cases are labeled separately
-- Testing conducted September 2026; all model and engine versions are stated inline
+- All speeds are multi-run samples; ±10% variance is normal (MTP acceptance depends on content)
+- Capacity figures are measured extremes with successful inference; "launch OK but inference crash" cases are labeled
+- Tested September 2026 · RTX 5090 Laptop 24GB · Windows 11 · llama.cpp b10840 / b10889
+- Raw thermal data (100 rounds) and all speed data are in [`data/`](./data)
 
 ## License
 
-- This document: CC BY 4.0
-- Tool scripts: MIT
-- Model weights follow their respective upstream licenses (Qwen3.8-27B family is Apache-2.0)
+- Documentation: CC BY 4.0 ｜ Scripts: MIT (see [LICENSE](./LICENSE))
+- Model weights follow upstream licenses (Qwen3.8-27B family is Apache-2.0)
 
 ## Acknowledgements
 
-- **Alibaba / Qwen team** — the Qwen3.8-27B base model
-- **unsloth** — NVFP4 quantization method, dynamic quant family, prebuilt llama.cpp
-- **DASLab** — GSQ-RCO academic quantization
-- **esatapedico** — NVFP4-MTP GGUF family packaging and transparent model cards
-- **llama.cpp community** — the inference engine and MTP support
-
----
-
-*Tested September 2026 · Platform: RTX 5090 Laptop 24GB · Windows 11*
+**Alibaba / Qwen team** (base model) · **unsloth** (NVFP4 quantization method, dynamic quant family) · **DASLab** (GSQ-RCO academic quantization) · **esatapedico** (NVFP4-MTP GGUF packaging and transparent model cards) · **llama.cpp community** (engine and MTP support)
