@@ -120,6 +120,56 @@
 
 ---
 
+## 👁 视觉支持（2026-09-11 新增）
+
+模型是 VLM，视觉组件（mmproj）需单独获取，且可**自行量化省显存**：
+
+| 操作 | 命令 / 结果 |
+|---|---|
+| 获取 | `mmproj-BF16.gguf`（888 MB，来自 HF 的 Qwen3.8-27B repo）|
+| **自行量化** | `llama-quantize mmproj-BF16.gguf mmproj-Q8_0.gguf Q8_0` → **600 MB**（实测识别质量与 BF16 相同）|
+
+**★ 视觉模式的速度-上下文曲线**（非线性悬崖，注意最后一档）：
+
+| 上下文 | 生成速度 | 视觉耗时 | 判定 |
+|---|---|---|---|
+| 192K | 3.9 tok/s | 47 s | ❌ |
+| 160K | 20.8 tok/s | — | ❌ |
+| 160K + `--ctx-checkpoints 4` | 37.2 tok/s | — | ⚠️ |
+| **152K + `--ctx-checkpoints 4`** | **63.6 tok/s** | **6.1 s** | ✅ **推荐** |
+
+> 生成速度与上下文呈非线性关系（显存贴边时静默进入极慢回退模式——不是 OOM）。视觉模式推荐 **152K**；纯文本模式仍可用 192K。
+> 完整指南与 API 示例：[docs/vision-setup.md](docs/vision-setup.md)
+
+## 🧠 思考档位与预算（2026-09-11 新增）
+
+**默认档 xhigh 在 API 场景是陷阱**（实测正文零输出，22,021 字符思考烧光 6,000 token 上限）：
+
+| 配置 | 耗时 | 思考量 | 正文 | 结果 |
+|---|---|---|---|---|
+| xhigh 无预算 | 114 s | 22,021 字符 | **0** | ❌ |
+| xhigh + **顶层**预算 3000 | 103 s | 10,059 | 6,386 | ✅ |
+| xhigh + 模板内预算 3000 | 117 s | 22,207 | 0 | ❌ 参数被静默忽略 |
+| **medium** | **37 s** | 826 | 4,274 | ✅ 推荐 |
+| low | 27 s | 692 | — | ✅ 最快 |
+
+**★ 关键坑**：`reasoning_budget_tokens` 必须放在**请求 JSON 顶层**——放进 `chat_template_kwargs` 里会被静默忽略。
+> 完整指南（含正确/错误写法对照）：[docs/reasoning-guide.md](docs/reasoning-guide.md)
+
+## 🔬 深度验证：iMatrix 对照与自编译实录（2026-09-12 新增）
+
+**① iMatrix 混合量化（15.95 GiB）不值得换** —— 同题代码对决：质量打平（8/9 vs 8/9），但生成慢 27%、上下文少 48K、体积大 1.5 GiB。**印证：PPL 优势 ≠ 真实任务质量优势**。
+
+**② 自编译版发现上游 MTP bug** —— 自编译（MSVC + CUDA 12.8）开启 `--spec-type draft-mtp` 后 **prefill 慢 57 倍**（32.7 vs 1867 tok/s，静默降速非崩溃）；官方构建（Clang + CUDA 13.3）完全正常。已提交上游：**[ggml-org/llama.cpp#28790](https://github.com/ggml-org/llama.cpp/issues/28790)**。
+
+**③ 引擎升级情报** —— 官方最新 b10917 与现役 b10889 性能基本持平（prefill −9% / decode −3%，均在噪声范围内）→ **暂不升级**。
+
+**④ 参数红榜**：`--ctx-checkpoints 4` ✅ 有效（+79%）｜ `--spec-default` ❌ 负优化（−39%）｜ `n-max 8` ❌ 负优化。
+
+> 自编译完整记录（四个坑 + 排查过程）：[docs/custom-build-and-mtp-bug.md](docs/custom-build-and-mtp-bug.md) ｜ 全部原始数据：[data/round2-new-results.md](data/round2-new-results.md)
+
+---
+
 ## 🔍 筛选过程：53 → 1
 
 ![筛选漏斗](assets/chart4-selection-funnel.svg)
