@@ -120,6 +120,56 @@
 
 ---
 
+## 👁 Vision Support (added 2026-09-11)
+
+The model is a VLM; the vision component (mmproj) ships separately and can be **quantized to save VRAM**:
+
+| Step | Command / Result |
+|---|---|
+| Get | `mmproj-BF16.gguf` (888 MB, from the HF Qwen3.8-27B repo) |
+| **Self-quantize** | `llama-quantize mmproj-BF16.gguf mmproj-Q8_0.gguf Q8_0` → **600 MB** (recognition quality identical in testing) |
+
+**★ Vision mode speed-vs-context curve** (non-linear cliff — note the last row):
+
+| Context | Generation | Vision latency | Verdict |
+|---|---|---|---|
+| 192K | 3.9 tok/s | 47 s | ❌ |
+| 160K | 20.8 tok/s | — | ❌ |
+| 160K + `--ctx-checkpoints 4` | 37.2 tok/s | — | ⚠️ |
+| **152K + `--ctx-checkpoints 4`** | **63.6 tok/s** | **6.1 s** | ✅ **recommended** |
+
+> Generation speed degrades non-linearly with context (silent slow-path fallback when VRAM is tight — not an OOM). Recommended: **152K with vision**, 192K for text-only.
+> Full guide + API example: [docs/vision-setup.md](docs/vision-setup.md)
+
+## 🧠 Reasoning Effort & Budget (added 2026-09-11)
+
+**The default `xhigh` level is a trap in API usage** (measured: zero content output; 22,021 chars of thinking burned through the 6,000-token cap):
+
+| Config | Time | Thinking | Content | Verdict |
+|---|---|---|---|---|
+| xhigh, no budget | 114 s | 22,021 chars | **0** | ❌ |
+| xhigh + **top-level** budget 3000 | 103 s | 10,059 | 6,386 | ✅ |
+| xhigh + budget inside template kwargs | 117 s | 22,207 | 0 | ❌ silently ignored |
+| **medium** | **37 s** | 826 | 4,274 | ✅ recommended |
+| low | 27 s | 692 | — | ✅ fastest |
+
+**★ Key gotcha**: `reasoning_budget_tokens` must be a **top-level request field** — putting it inside `chat_template_kwargs` is silently ignored.
+> Full guide: [docs/reasoning-guide.md](docs/reasoning-guide.md)
+
+## 🔬 Deep Verification: iMatrix & Custom Build (added 2026-09-12)
+
+**① iMatrix mixed quant (15.95 GiB) is not worth switching to** — same-task code duel: quality tied (8/9 vs 8/9), but 27% slower generation, 48K less context, 1.5 GiB larger. **PPL advantage ≠ real-task quality advantage.**
+
+**② Custom build exposed an upstream MTP bug** — with MSVC + CUDA 12.8 self-compilation, `--spec-type draft-mtp` makes **prefill ~57× slower** (32.7 vs 1867 tok/s, silent slowdown); official builds (Clang + CUDA 13.3) are unaffected. Filed upstream: **[ggml-org/llama.cpp#28790](https://github.com/ggml-org/llama.cpp/issues/28790)**.
+
+**③ Engine upgrade intel** — official b10917 ≈ b10889 (prefill −9% / decode −3%, within noise) → **no upgrade needed**.
+
+**④ Parameter scoreboard**: `--ctx-checkpoints 4` ✅ (+79%) | `--spec-default` ❌ (−39%) | `n-max 8` ❌.
+
+> Full custom-build log: [docs/custom-build-and-mtp-bug.md](docs/custom-build-and-mtp-bug.md) | Raw data: [data/round2-new-results.md](data/round2-new-results.md)
+
+---
+
 ## 🔍 Selection Funnel: 53 → 1
 
 ![Selection funnel](assets/chart4-selection-funnel.svg)
