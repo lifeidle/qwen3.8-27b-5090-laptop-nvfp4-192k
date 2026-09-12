@@ -184,11 +184,11 @@
 
 **① iMatrix 混合量化（15.95 GiB）不值得换** —— 同题代码对决：质量打平（8/9 vs 8/9），但生成慢 27%、上下文少 48K、体积大 1.5 GiB。**印证：PPL 优势 ≠ 真实任务质量优势**。
 
-**② 自编译版发现上游 MTP bug** —— 自编译（MSVC + CUDA 12.8）开启 `--spec-type draft-mtp` 后 **prefill 慢 57 倍**（32.7 vs 1867 tok/s，静默降速非崩溃）；官方构建（Clang + CUDA 13.3）完全正常。已提交上游：**[ggml-org/llama.cpp#28790](https://github.com/ggml-org/llama.cpp/issues/28790)**。
+**② 自编译版发现并修复了上游 MTP bug** —— 自编译（nvcc 12.8 + MSVC，不受支持的组合）开启 `--spec-type draft-mtp` 后 prefill 慢 57 倍；换到官方配对（**CUDA 13.3.33 + MSVC 19.44**）后完全修复且全项最快（prefill **1675.7** / decode **75.3~88.7** / 视觉 **4.5s**）。上游 issue：**[#28790](https://github.com/ggml-org/llama.cpp/issues/28790)**（含 DLL 互换法定点全过程）。
 
 ![构建对比](assets/chart7-build-comparison.svg)
 
-**③ 引擎升级情报** —— 官方最新 b10917 与现役 b10889 性能基本持平（prefill −9% / decode −3%，均在噪声范围内）→ **暂不升级**。
+**③ 引擎升级情报** —— 官方最新 b10917 与 b10889 基本持平；**自编译版（CUDA 13.3 官方配对）已完全跑通并全面验证**，现已作为主力使用。可复现配方（含工具链红线 + 4 个坑）见 [docs/windows-self-build-recipe.md](docs/windows-self-build-recipe.md)。
 
 **④ 参数红榜**：`--ctx-checkpoints 4` ✅ 有效（+79%）｜ `--spec-default` ❌ 负优化（−39%）｜ `n-max 8` ❌ 负优化。
 
