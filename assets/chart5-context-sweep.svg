@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 430" width="940" height="430">
+<rect width="940" height="430" rx="12" fill="#ffffff"/>
+<text x="24" y="34" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="19" font-weight="700" fill="#0f172a">Vision Mode Context Sweep — 150K is the Sweet Spot</text>
+<text x="24" y="56" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#64748b">Qwen3.8-27B NVFP4-LOW + Q8 vision + ckpt4 + MTP n-max 3 · RTX 5090 Laptop 24GB · 512-token runs</text>
+<line x1="70" y1="340.0" x2="870" y2="340.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="344.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="end">0</text>
+<line x1="70" y1="294.0" x2="870" y2="294.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="298.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="end">20</text>
+<line x1="70" y1="248.0" x2="870" y2="248.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="252.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="end">40</text>
+<line x1="70" y1="202.0" x2="870" y2="202.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="206.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="end">60</text>
+<line x1="70" y1="156.0" x2="870" y2="156.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="160.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="end">80</text>
+<line x1="70" y1="110.0" x2="870" y2="110.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="114.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="end">100</text>
+<rect x="92.5" y="155.1" width="55.0" height="184.9" rx="5" fill="#d97706"/>
+<text x="120.0" y="148.1" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">80.4</text>
+<text x="120.0" y="358.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">148K</text>
+<rect x="192.5" y="141.5" width="55.0" height="198.5" rx="5" fill="#d97706"/>
+<text x="220.0" y="134.5" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">86.3</text>
+<text x="220.0" y="358.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">150K</text>
+<rect x="292.5" y="193.7" width="55.0" height="146.3" rx="5" fill="#dc2626"/>
+<text x="320.0" y="186.7" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">63.6</text>
+<text x="320.0" y="358.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">152K</text>
+<rect x="392.5" y="214.9" width="55.0" height="125.1" rx="5" fill="#dc2626"/>
+<text x="420.0" y="207.9" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">54.4</text>
+<text x="420.0" y="358.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">154K</text>
+<rect x="492.5" y="226.8" width="55.0" height="113.2" rx="5" fill="#dc2626"/>
+<text x="520.0" y="219.8" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">49.2</text>
+<text x="520.0" y="358.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">156K</text>
+<rect x="592.5" y="230.3" width="55.0" height="109.7" rx="5" fill="#dc2626"/>
+<text x="620.0" y="223.3" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">47.7</text>
+<text x="620.0" y="358.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">158K</text>
+<rect x="692.5" y="254.4" width="55.0" height="85.6" rx="5" fill="#dc2626"/>
+<text x="720.0" y="247.4" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">37.2</text>
+<text x="720.0" y="358.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">160K*</text>
+<rect x="792.5" y="331.0" width="55.0" height="9.0" rx="5" fill="#dc2626"/>
+<text x="820.0" y="324.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">3.9</text>
+<text x="820.0" y="358.0" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">192K*</text>
+<line x1="70" y1="156.9" x2="870" y2="156.9" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="866" y="150.9" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11.5" fill="#2563eb" text-anchor="end">text-only mode reference: 79.6 tok/s</text>
+<text x="870" y="98" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11.5" fill="#64748b" text-anchor="end">tok/s (generation)</text>
+<text x="220.0" y="116" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" font-weight="700" fill="#d97706" text-anchor="middle">← peak 86.3 (+36% vs 152K)</text>
+<text x="24" y="408" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11.5" fill="#64748b">* 160K with ctx-checkpoints 4; 192K causes VRAM cliff (3.9). 150K ≈ text-only speed with full vision + long context.</text>
+</svg>
