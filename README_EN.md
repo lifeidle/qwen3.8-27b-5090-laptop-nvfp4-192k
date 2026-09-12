@@ -184,11 +184,11 @@ The model is a VLM; the vision component (mmproj) ships separately and can be **
 
 **① iMatrix mixed quant (15.95 GiB) is not worth switching to** — same-task code duel: quality tied (8/9 vs 8/9), but 27% slower generation, 48K less context, 1.5 GiB larger. **PPL advantage ≠ real-task quality advantage.**
 
-**② Custom build exposed an upstream MTP bug** — with MSVC + CUDA 12.8 self-compilation, `--spec-type draft-mtp` makes **prefill ~57× slower** (32.7 vs 1867 tok/s, silent slowdown); official builds (Clang + CUDA 13.3) are unaffected. Filed upstream: **[ggml-org/llama.cpp#28790](https://github.com/ggml-org/llama.cpp/issues/28790)**.
+**② Custom build exposed AND fixed an upstream MTP bug** — self-compiled with nvcc 12.8 + MSVC (an unsupported pairing), `--spec-type draft-mtp` made prefill ~57× slower; switching to the officially-supported pairing (**CUDA 13.3.33 + MSVC 19.44**) fixed it completely — now the fastest build of all (prefill **1675.7** / decode **75.3~88.7** / vision **4.5s**). Upstream issue: **[#28790](https://github.com/ggml-org/llama.cpp/issues/28790)** (full DLL-swap bisection included).
 
 ![Build comparison](assets/chart7-build-comparison.svg)
 
-**③ Engine upgrade intel** — official b10917 ≈ b10889 (prefill −9% / decode −3%, within noise) → **no upgrade needed**.
+**③ Engine upgrade intel** — official b10917 ≈ b10889; the **self-compiled build (CUDA 13.3 official pairing) is fully validated** and now used as the daily driver. Reproducible recipe (toolchain red line + 4 pitfalls): [docs/windows-self-build-recipe.md](docs/windows-self-build-recipe.md).
 
 **④ Parameter scoreboard**: `--ctx-checkpoints 4` ✅ (+79%) | `--spec-default` ❌ (−39%) | `n-max 8` ❌.
 
