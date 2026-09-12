@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Generate SVG charts for the GitHub benchmark report (no external deps)."""
 import os, re, html
 
-OUT = r"D:\qwen38-27b-benchmark\assets"
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
 os.makedirs(OUT, exist_ok=True)
 
 FONT = "-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
@@ -107,7 +107,7 @@ def chart_capacity():
 def chart_thermal():
     # parse raw data
     pts = []
-    src = r"D:\models\Qwen3.8-27B-quant-test\logs\thermal_results.txt"
+    src = os.path.join(os.path.dirname(OUT), "data", "thermal-stress-12min-100rounds.txt")
     if os.path.exists(src):
         for line in open(src, encoding="utf-8"):
             m = re.search(r"\[(\d+)m(\d+)s\].*?([\d.]+) tok/s.*?GPU:\s*(\d+),\s*([\d.]+) W,\s*(\d+) MHz", line)
