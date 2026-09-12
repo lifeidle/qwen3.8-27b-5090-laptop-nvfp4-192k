@@ -2,7 +2,7 @@
 # 千问3.8-27B 主力启动脚本 —— NVFP4-MTP LOW（速度冠军档）
 # 实测（新引擎 b10889 + 192K + q8_0 KV + MTP n-max 3）：
 #   生成 79.6 tok/s | 15.6K 长输入 9.7 秒 | 质量与 BF16 统计打平
-#   开启视觉（mmproj）后：上下文 176K 实测可用（推荐 164K 更稳）
+#   开视觉（mmproj）后：推荐 150K——细扫实测 86.2 tok/s（152K 起滑坡，详见 README）
 # ============================================================
 # 用法：双击同目录的  启动-主力.bat
 #       或 powershell -ExecutionPolicy Bypass -File 本脚本
@@ -18,11 +18,9 @@
 
 $ErrorActionPreference = "Stop"
 
-# ---- 引擎 ----
-$LLAMA = "D:\llama-new-b10889\new"   # 新引擎 b10889（实测生成 +6.6%、prefill -4%）
-# $LLAMA = "D:\llama.cpp"            # 旧引擎 b10840 → 需把下方 --load-mode none 换回 --no-mmap
-
-$MODELS_DIR = "D:\models\Qwen3.8-27B-quant-test"
+# ---- 引擎与模型（★ 改成你自己的路径）----
+$LLAMA = "D:\llama.cpp"                  # llama.cpp Windows CUDA 包解压目录（建议 b10889 或更新）
+$MODELS_DIR = "D:\models\Qwen3.8-27B"    # GGUF 模型所在目录
 $MODEL = Join-Path $MODELS_DIR "Qwen3.8-27B-NVFP4-MTP-LOW.gguf"
 
 # ---- 视觉（多模态）开关：占用额外显存 ----
