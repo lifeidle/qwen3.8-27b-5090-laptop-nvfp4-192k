@@ -2,25 +2,29 @@
 # 千问3.8-27B 主力启动脚本 —— NVFP4-MTP LOW（速度冠军档）
 # 实测（新引擎 b10889 + 192K + q8_0 KV + MTP n-max 3）：
 #   生成 79.6 tok/s | 15.6K 长输入 9.7 秒 | 质量与 BF16 统计打平
-#   开视觉（mmproj）后：推荐 150K——细扫实测 86.2 tok/s（152K 起滑坡，详见 README）
+#   开启视觉（mmproj）后：上下文 176K 实测可用（推荐 164K 更稳）
 # ============================================================
 # 用法：双击同目录的  启动-主力.bat
 #       或 powershell -ExecutionPolicy Bypass -File 本脚本
 # 启动后（网页版）http://127.0.0.1:8082 ｜ API 端点 /v1/chat/completions
 #
 # ★★ API 调用必读 ★★
-#   1) reasoning_effort 必须显式传参，可选：xhigh / medium / low
-#      默认 xhigh 实测 84 秒仍未答完（6000 token 全烧在思考）→ 强烈建议 medium 或 low
+#   1) 本脚本已在服务端设好 --reasoning-effort xhigh + --reasoning-budget 12000：
+#      - 默认 xhigh 质量档（客户端不传档位时自动应用，WorkBuddy 等 harness 直接受益）
+#      - 思考被硬限制在 12000 token 内 → 永远不会"思考失控 / 正文零输出"（实测 6000 档 113 秒稳定完成）
+#      - 客户端仍可覆盖提速：{"chat_template_kwargs":{"reasoning_effort":"medium"}}
 #   2) 如果用 API 且不需要思考 → "enable_thinking": false
-#      {"messages":[...], "chat_template_kwargs":{"reasoning_effort":"medium"}}
 #   3) 图像输入：content 数组里放 {"type":"image_url","image_url":{"url":"data:image/png;base64,..."}}
+#   4) --reasoning-budget 调参：8000=快(~3min) ｜ 12000=平衡(~4.5min，当前) ｜ 16000=深度(~6min)
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-# ---- 引擎与模型（★ 改成你自己的路径）----
-$LLAMA = "D:\llama.cpp"                  # llama.cpp Windows CUDA 包解压目录（建议 b10889 或更新）
-$MODELS_DIR = "D:\models\Qwen3.8-27B"    # GGUF 模型所在目录
+# ---- 引擎 ----
+$LLAMA = "D:\llama-new-b10889\new"   # 新引擎 b10889（实测生成 +6.6%、prefill -4%）
+# $LLAMA = "D:\llama.cpp"            # 旧引擎 b10840 → 需把下方 --load-mode none 换回 --no-mmap
+
+$MODELS_DIR = "D:\models\Qwen3.8-27B-quant-test"
 $MODEL = Join-Path $MODELS_DIR "Qwen3.8-27B-NVFP4-MTP-LOW.gguf"
 
 # ---- 视觉（多模态）开关：占用额外显存 ----
@@ -70,5 +74,7 @@ Set-Location $LLAMA
     @KV_TYPES `
     --spec-type draft-mtp `
     --spec-draft-n-max 3 `
+    --reasoning-effort xhigh `
+    --reasoning-budget 12000 `
     --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.0 `
     --host 127.0.0.1 --port 8082
