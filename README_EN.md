@@ -134,11 +134,13 @@ The model is a VLM; the vision component (mmproj) ships separately and can be **
 | Context | Generation | Vision latency | Verdict |
 |---|---|---|---|
 | 192K | 3.9 tok/s | 47 s | ❌ |
-| 160K | 20.8 tok/s | — | ❌ |
-| 160K + `--ctx-checkpoints 4` | 37.2 tok/s | — | ⚠️ |
-| **152K + `--ctx-checkpoints 4`** | **63.6 tok/s** | **6.1 s** | ✅ **recommended** |
+| 160K + `--ctx-checkpoints 4` | 37.2 tok/s | — | ❌ |
+| 154K | 54.4 tok/s | — | ⚠️ |
+| 152K | 63.6 tok/s | — | ⚠️ cliff onset |
+| **150K + `--ctx-checkpoints 4`** | **86.2 tok/s** | **6.1 s** | ✅ **recommended (sweet spot)** |
+| 148K | 80.4 tok/s | — | ✅ |
 
-> Generation speed degrades non-linearly with context (silent slow-path fallback when VRAM is tight — not an OOM). Recommended: **152K with vision**, 192K for text-only.
+> Generation speed degrades non-linearly with context (silent slow-path fallback when VRAM is tight — not an OOM). **A fine sweep found 150K is the peak**: past 152K it collapses (63.6), at 150K it holds 86.2 (≈ text-only level). Recommended: **150K with vision**, 192K for text-only.
 > Full guide + API example: [docs/vision-setup.md](docs/vision-setup.md)
 
 ## 🧠 Reasoning Effort & Budget (added 2026-09-11)
