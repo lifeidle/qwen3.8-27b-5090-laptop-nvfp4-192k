@@ -13,9 +13,31 @@
 
 ---
 
-## 🏆 The Winner (read this first)
+## 🏆 Final Results (TL;DR — copy these two configs)
 
-**NVFP4-MTP-LOW + 192K context + q8_0 KV + MTP n-max 3 + llama.cpp b10889**
+| Mode | Context | Generation | Long-input prefill | Vision | Launcher |
+|---|---|---|---|---|---|
+| **🖼 Vision (daily driver)** | **150K** | **86.2 tok/s** | **1899 tok/s** | ✅ 6.1 s/image | `scripts/start-nvfp4-low.ps1` |
+| 📄 Text-only (long material) | 192K | 79.6 tok/s | — | — | set `$ENABLE_VISION = $false` in script |
+
+**Common basis**: `Qwen3.8-27B-NVFP4-MTP-LOW` (14.47 GiB) · q8_0 KV · MTP n-max 3 · llama.cpp **b10889** · RTX 5090 Laptop 24GB
+
+**Two counter-intuitive findings** (both with full control-group data):
+
+- **150K is the sweet spot** (bigger is NOT better): 36% faster than 152K, only 2K less context
+- **Several "community-recommended" flags are pure regressions on this machine**: `-ub 1024` (−16%), `--spec-default` (−39%), iMatrix mixed quant (−27%) — **someone else's optimum ≠ your optimum**
+
+![Context sweep](assets/chart5-context-sweep.svg)
+
+> 📖 Full test log across 14 categories: [docs/](./docs) | Raw data: [data/](./data)
+
+![Parameter scoreboard](assets/chart8-parameter-scoreboard.svg)
+
+---
+
+## 🥇 Model Selection: 53 → 1
+
+**Winner: NVFP4-MTP-LOW + q8_0 KV + MTP n-max 3 + llama.cpp b10889**
 
 ```powershell
 # One-command launch (edit the two path variables at the top of the script first)
@@ -164,9 +186,13 @@ The model is a VLM; the vision component (mmproj) ships separately and can be **
 
 **② Custom build exposed an upstream MTP bug** — with MSVC + CUDA 12.8 self-compilation, `--spec-type draft-mtp` makes **prefill ~57× slower** (32.7 vs 1867 tok/s, silent slowdown); official builds (Clang + CUDA 13.3) are unaffected. Filed upstream: **[ggml-org/llama.cpp#28790](https://github.com/ggml-org/llama.cpp/issues/28790)**.
 
+![Build comparison](assets/chart7-build-comparison.svg)
+
 **③ Engine upgrade intel** — official b10917 ≈ b10889 (prefill −9% / decode −3%, within noise) → **no upgrade needed**.
 
 **④ Parameter scoreboard**: `--ctx-checkpoints 4` ✅ (+79%) | `--spec-default` ❌ (−39%) | `n-max 8` ❌.
+
+![Micro tuning](assets/chart6-micro-tuning.svg)
 
 > Full custom-build log: [docs/custom-build-and-mtp-bug.md](docs/custom-build-and-mtp-bug.md) | Raw data: [data/round2-new-results.md](data/round2-new-results.md)
 
