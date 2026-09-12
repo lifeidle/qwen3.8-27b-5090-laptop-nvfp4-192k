@@ -20,11 +20,9 @@
 
 $ErrorActionPreference = "Stop"
 
-# ---- 引擎 ----
-$LLAMA = "D:\llama-new-b10889\new"   # 新引擎 b10889（实测生成 +6.6%、prefill -4%）
-# $LLAMA = "D:\llama.cpp"            # 旧引擎 b10840 → 需把下方 --load-mode none 换回 --no-mmap
-
-$MODELS_DIR = "D:\models\Qwen3.8-27B-quant-test"
+# ---- 引擎与模型（★ 改成你自己的路径）----
+$LLAMA = "D:\llama.cpp"                  # llama.cpp 目录（官方 CUDA 包或自编译版；建议 b10889+）
+$MODELS_DIR = "D:\models\Qwen3.8-27B"    # GGUF 模型所在目录
 $MODEL = Join-Path $MODELS_DIR "Qwen3.8-27B-NVFP4-MTP-LOW.gguf"
 
 # ---- 视觉（多模态）开关：占用额外显存 ----
