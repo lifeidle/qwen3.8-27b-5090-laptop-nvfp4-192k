@@ -13,9 +13,31 @@
 
 ---
 
-## 🏆 最佳选择（直接看这里）
+## 🏆 最终结论（TL;DR — 照抄这两个配置即可）
 
-**NVFP4-MTP-LOW + 192K 上下文 + q8_0 KV + MTP n-max 3 + llama.cpp b10889**
+| 模式 | 上下文 | 生成速度 | 长文本处理 | 视觉识别 | 启动脚本 |
+|---|---|---|---|---|---|
+| **🖼 视觉模式（日常主力）** | **150K** | **86.2 tok/s** | **1899 tok/s** | ✅ 6.1 秒/张 | `scripts/start-nvfp4-low.ps1` |
+| 📄 纯文本模式（超长材料）| 192K | 79.6 tok/s | — | — | 脚本内 `$ENABLE_VISION = $false` |
+
+**统一底座**：`Qwen3.8-27B-NVFP4-MTP-LOW`（14.47 GiB）· q8_0 KV · MTP n-max 3 · llama.cpp **b10889** · RTX 5090 Laptop 24GB
+
+**两个反直觉发现**（都有完整对照组数据）：
+
+- **150K 才是甜蜜点**（不是越大越好）：比 152K 快 **36%**，只少 2K 上下文
+- **多个"社区推荐"参数在本机全是负优化**：`-ub 1024`（−16%）、`--spec-default`（−39%）、iMatrix 混合量化（−27%）——**别人的最优 ≠ 你的最优**
+
+![上下文细扫](assets/chart5-context-sweep.svg)
+
+> 📖 14 大类完整测试过程：[docs/](./docs) ｜ 原始数据：[data/](./data)
+
+![参数红黑榜](assets/chart8-parameter-scoreboard.svg)
+
+---
+
+## 🥇 模型选型：53 → 1
+
+**最终赢家：NVFP4-MTP-LOW + q8_0 KV + MTP n-max 3 + llama.cpp b10889**
 
 ```powershell
 # 一键启动（先改脚本顶部的两个路径变量）
@@ -164,9 +186,13 @@
 
 **② 自编译版发现上游 MTP bug** —— 自编译（MSVC + CUDA 12.8）开启 `--spec-type draft-mtp` 后 **prefill 慢 57 倍**（32.7 vs 1867 tok/s，静默降速非崩溃）；官方构建（Clang + CUDA 13.3）完全正常。已提交上游：**[ggml-org/llama.cpp#28790](https://github.com/ggml-org/llama.cpp/issues/28790)**。
 
+![构建对比](assets/chart7-build-comparison.svg)
+
 **③ 引擎升级情报** —— 官方最新 b10917 与现役 b10889 性能基本持平（prefill −9% / decode −3%，均在噪声范围内）→ **暂不升级**。
 
 **④ 参数红榜**：`--ctx-checkpoints 4` ✅ 有效（+79%）｜ `--spec-default` ❌ 负优化（−39%）｜ `n-max 8` ❌ 负优化。
+
+![微调测试](assets/chart6-micro-tuning.svg)
 
 > 自编译完整记录（四个坑 + 排查过程）：[docs/custom-build-and-mtp-bug.md](docs/custom-build-and-mtp-bug.md) ｜ 全部原始数据：[data/round2-new-results.md](data/round2-new-results.md)
 
